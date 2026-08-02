@@ -1,0 +1,35 @@
+SELECT TOP 20000
+
+g.source_id,
+
+g.parallax,
+g.parallax_error,
+g.parallax_over_error,
+
+g.ruwe,
+
+g.phot_g_mean_flux,
+g.phot_g_mean_flux_error,
+
+g.phot_g_mean_mag,
+g.phot_bp_mean_mag,
+g.phot_rp_mean_mag,
+g.bp_rp,
+
+a.teff_gspphot,
+a.radius_gspphot
+
+FROM gaiadr3.gaia_source AS g
+
+JOIN gaiadr3.astrophysical_parameters AS a
+ON g.source_id = a.source_id
+
+WHERE
+
+g.parallax_over_error > 10
+AND g.ruwe < 1.4
+
+AND a.teff_gspphot IS NOT NULL
+AND a.radius_gspphot IS NOT NULL
+
+AND g.phot_g_mean_flux IS NOT NULL

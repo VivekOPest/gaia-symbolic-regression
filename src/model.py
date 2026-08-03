@@ -41,6 +41,7 @@ from sklearn.metrics import (
 
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
+import matplotlib.pyplot as plt
 
 
 # --------------------------------------------------
@@ -53,13 +54,49 @@ DATA_PATH = PROJECT_ROOT / "data" / "gaia_features.csv"
 
 RESULTS_DIR = PROJECT_ROOT / "results"
 
-MODEL_PATH = RESULTS_DIR / "model.pt"
+from pathlib import Path
+import re
 
-HISTORY_PATH = RESULTS_DIR / "history.csv"
+RESULTS_DIR.mkdir(exist_ok=True)
 
-PREDICTIONS_PATH = RESULTS_DIR / "predictions.csv"
+existing = []
 
-SCALER_PATH = RESULTS_DIR / "scaler.pkl"
+for folder in RESULTS_DIR.iterdir():
+
+    if folder.is_dir():
+
+        m = re.match(r"trial_ml(\d+)", folder.name)
+
+        if m:
+
+            existing.append(int(m.group(1)))
+
+trial_number = max(existing, default=0) + 1
+
+TRIAL_DIR = RESULTS_DIR / f"trial_ml{trial_number:03d}"
+
+TRIAL_DIR.mkdir()
+
+PLOT_DIR = TRIAL_DIR / "plots"
+TABLE_DIR = TRIAL_DIR / "tables"
+
+PLOT_DIR.mkdir()
+TABLE_DIR.mkdir()
+
+
+MODEL_PATH = TRIAL_DIR / "model.pt"
+
+HISTORY_PATH = TRIAL_DIR / "history.csv"
+
+PREDICTIONS_PATH = TRIAL_DIR / "predictions.csv"
+
+SUMMARY_PATH = TRIAL_DIR / "summary.txt"
+
+METRICS_PATH = TRIAL_DIR / "metrics.json"
+
+CONFIG_PATH = TRIAL_DIR / "config.json"
+
+SCALER_PATH = TRIAL_DIR / "scaler.pkl"
 
 RESULTS_DIR.mkdir(exist_ok=True)
 
@@ -74,11 +111,11 @@ TEST_SIZE = 0.50
 
 BATCH_SIZE = 256
 
-LEARNING_RATE = 1e-3
+LEARNING_RATE = 2e-4
 
-MAX_EPOCHS = 300
+MAX_EPOCHS = 800
 
-EARLY_STOPPING_PATIENCE = 20
+EARLY_STOPPING_PATIENCE = 370
 
 
 DEVICE = torch.device(
@@ -118,18 +155,15 @@ print("\nShape:", df.shape)
 # Features
 # --------------------------------------------------
 
-X = df[
-    [
-        "temperature_K",
-        "radius_m",
-        "distance_m"
-    ]
-]
+X = pd.DataFrame({
+    "temperature" : np.log10(df["temperature_K"]),
+    "radius"      : np.log10(df["radius_m"]),
+    "distance"    : np.log10(df["distance_m"]),
+})
 
 # Learn logarithm of flux instead of flux
 
 y = np.log10(df["flux_proxy"])
-
 
 # --------------------------------------------------
 # Train Test Split
@@ -258,36 +292,27 @@ class GaiaNet(nn.Module):
 
         self.network = nn.Sequential(
 
-            nn.Linear(3, 64),
+            nn.Linear(3, 256),
+            nn.BatchNorm1d(256),
+            nn.GELU(),
+            nn.Dropout(0.05),
 
-            nn.BatchNorm1d(64),
+            nn.Linear(256, 256),
+            nn.BatchNorm1d(256),
+            nn.GELU(),
 
-            nn.ReLU(),
+            nn.Linear(256,128),
+            nn.BatchNorm1d(128),
+            nn.GELU(),
+            nn.Dropout(0.05),
 
-            nn.Dropout(0.20),
+            nn.Linear(128,64),
+            nn.GELU(),
 
+            nn.Linear(64,32),
+            nn.GELU(),
 
-            nn.Linear(64, 64),
-
-            nn.BatchNorm1d(64),
-
-            nn.ReLU(),
-
-            nn.Dropout(0.20),
-
-
-            nn.Linear(64, 32),
-
-            nn.ReLU(),
-
-
-            nn.Linear(32, 16),
-
-            nn.ReLU(),
-
-
-            nn.Linear(16, 1)
-
+            nn.Linear(32,1)
         )
 
     def forward(self, x):
@@ -300,6 +325,11 @@ class GaiaNet(nn.Module):
 # ==========================================================
 
 model = GaiaNet().to(DEVICE)
+
+for m in model.modules():
+    if isinstance(m, nn.Linear):
+        nn.init.kaiming_normal_(m.weight)
+        nn.init.zeros_(m.bias)
 
 # ==========================================================
 # Number of Trainable Parameters
@@ -339,7 +369,7 @@ print("\nModel Successfully Built.\n")
 # Loss Function
 # ==========================================================
 
-criterion = nn.MSELoss()
+criterion = nn.HuberLoss(delta=0.5)
 
 print("Loss Function :", criterion)
 
@@ -353,7 +383,7 @@ optimizer = torch.optim.AdamW(
 
     lr=LEARNING_RATE,
 
-    weight_decay=1e-4
+    weight_decay=5e-5
 
 )
 
@@ -371,7 +401,7 @@ scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
 
     factor=0.5,
 
-    patience=5
+    patience=40
 
 )
 
@@ -399,15 +429,50 @@ history = {
 
 }
 
-# ==========================================================
+#===========================================================
 # Training Loop
 # ==========================================================
 
 print("\nStarting Training...\n")
 
+config = {
+
+    "epochs": MAX_EPOCHS,
+
+    "batch_size": BATCH_SIZE,
+
+    "learning_rate": LEARNING_RATE,
+
+    "optimizer": "AdamW",
+
+    "scheduler": "ReduceLROnPlateau",
+
+    "loss": "HuberLoss",
+
+    "architecture": [128,64,32,16,16,1],
+
+    "dropout":[0.10,0.08,0.05],
+
+    "device": str(DEVICE),
+
+    "training_samples": len(train_dataset),
+
+    "testing_samples": len(test_dataset),
+
+    "parameters": total_parameters
+
+}
+
+import json
+
+with open(CONFIG_PATH,"w") as f:
+
+    json.dump(config,f,indent=4)
+
 start_time = time.time()
 
 for epoch in range(MAX_EPOCHS):
+
 
     # ---------------------------------------------
     # Training
@@ -430,6 +495,8 @@ for epoch in range(MAX_EPOCHS):
         loss = criterion(prediction, y_batch)
 
         loss.backward()
+
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
 
         optimizer.step()
 
@@ -471,7 +538,7 @@ for epoch in range(MAX_EPOCHS):
 
     current_lr = optimizer.param_groups[0]["lr"]
 
-
+ 
     # ---------------------------------------------
     # Save History
     # ---------------------------------------------
@@ -606,125 +673,290 @@ print("=" * 60)
 # Predictions
 # ==========================================================
 
-predictions = []
-
-truth = []
-
-model.eval()
+predictions_log = []
+truth_log = []
 
 with torch.no_grad():
-
     for X_batch, y_batch in test_loader:
 
         X_batch = X_batch.to(DEVICE)
 
         output = model(X_batch)
 
-        predictions.extend(
+        predictions_log.extend(output.cpu().numpy().flatten())
+        truth_log.extend(y_batch.numpy().flatten())
 
-            output.cpu().numpy().flatten()
+predictions_log = np.array(predictions_log)
 
-        )
+truth_log = np.array(truth_log)
 
-        truth.extend(
 
-            y_batch.numpy().flatten()
-
-        )
-
-predictions = 10 ** np.array(predictions)
-
-truth = 10 ** np.array(truth)
-
-# ----------------------------------------
-# Prediction Errors
-# ----------------------------------------
+predictions = predictions_log.copy()
+truth = truth_log.copy()
 
 residuals = predictions - truth
 
-percentage_error = (
-    residuals / truth
-) * 100
+rmse = np.sqrt(mean_squared_error(truth,predictions))
 
-prediction_df = pd.DataFrame(
+mae = mean_absolute_error(truth,predictions)
 
-    {
+r2 = r2_score(truth,predictions)
 
-        "True Flux": truth,
+mean_abs_log_error = np.mean(np.abs(residuals))
 
-        "Predicted Flux": predictions,
+metrics = {
 
-        "Residual": residuals,
+    # Dataset
+    "Training Samples": len(train_dataset),
+    "Testing Samples": len(test_dataset),
 
-        "Percentage Error": percentage_error
+    # Training
+    "Training Time (s)": float(training_time),
+    "Best Epoch": int(best_epoch),
+    "Validation Loss": float(best_loss),
+    "Final Train Loss": float(history["train_loss"][-1]),
+    "Final Validation Loss": float(history["test_loss"][-1]),
 
-    }
+    # Prediction Accuracy
+    "RMSE": float(rmse),
+    "MAE": float(mae),
+    "R²": float(r2),
 
+    # Residual statistics
+    "Residual Mean": float(np.mean(residuals)),
+    "Residual Std": float(np.std(residuals)),
+    "Residual Median": float(np.median(residuals)),
+    "Residual Max": float(np.max(residuals)),
+    "Residual Min": float(np.min(residuals)),
+
+    # Prediction statistics
+    "Prediction Mean": float(np.mean(predictions)),
+    "Prediction Std": float(np.std(predictions)),
+
+    # Truth statistics
+    "Truth Mean": float(np.mean(truth)),
+    "Truth Std": float(np.std(truth)),
+
+    # Model
+    "Parameters": int(total_parameters),
+    "Learning Rate": LEARNING_RATE,
+    "Batch Size": BATCH_SIZE
+}
+
+with open(METRICS_PATH,"w") as f:
+
+    json.dump(metrics,f,indent=4)
+
+with open(SUMMARY_PATH,"w") as f:
+
+    f.write("GAIA Neural Network Trial\n")
+
+    f.write("="*50+"\n")
+
+    f.write(f"Trial : trial_ml{trial_number:03d}\n")
+
+    f.write(f"Training samples : {len(train_dataset)}\n")
+
+    f.write(f"Testing samples : {len(test_dataset)}\n")
+
+    f.write(f"Best epoch : {best_epoch}\n")
+
+    f.write(f"Validation loss : {best_loss:.6f}\n")
+
+    f.write(f"RMSE (log10 Flux): {rmse:.4f}\n")
+
+    f.write(f"MAE (log10 Flux): {mae:.4f}\n")
+
+    f.write(f"Mean Absolute Log Error : {mean_abs_log_error:.4f}\n")
+
+    f.write(f"R2 : {r2:.6f}\n")
+
+    f.write(f"Training time : {training_time:.2f} sec\n")
+
+plt.figure(figsize=(10,6))
+
+plt.plot(
+    history["epoch"],
+    history["train_loss"],
+    linewidth=2,
+    label="Training Loss"
 )
+
+plt.plot(
+    history["epoch"],
+    history["test_loss"],
+    linewidth=2,
+    label="Validation Loss"
+)
+
+plt.title("Training History", fontsize=16)
+
+plt.xlabel("Epoch")
+
+plt.ylabel("Huber Loss")
+
+plt.grid(True)
+
+plt.legend()
+
+plt.tight_layout()
+
+plt.savefig(
+    PLOT_DIR/"loss_curve.png",
+    dpi=300
+)
+
+plt.close()
+
+
+plt.figure(figsize=(10,6))
+
+plt.hist(
+    residuals,
+    bins=80
+)
+
+plt.title("Residual Distribution")
+
+plt.xlabel("Residual (log10 Flux)")
+
+plt.ylabel("Count")
+
+plt.grid(True)
+
+plt.tight_layout()
+
+plt.savefig(
+    PLOT_DIR/"residual_distribution.png",
+    dpi=300
+)
+
+plt.close()
+
+
+plt.figure(figsize=(10,6))
+
+plt.scatter(
+    truth,
+    residuals,
+    s=8,
+    alpha=0.4
+)
+
+plt.axhline(
+    0,
+    color="red",
+    linestyle="--"
+)
+
+plt.title("Residual vs True Flux")
+
+plt.xlabel("True log10 Flux")
+plt.ylabel("Residual (log10 Flux)")
+
+plt.grid(True)
+
+plt.tight_layout()
+
+plt.savefig(
+    PLOT_DIR/"residual_vs_true.png",
+    dpi=300
+)
+
+plt.close()
+
+plt.figure(figsize=(8,8))
+
+plt.scatter(
+    truth,
+    predictions,
+    s=5,
+    alpha=0.4
+)
+
+plt.plot(
+    [truth.min(),truth.max()],
+    [truth.min(),truth.max()],
+    "r--"
+)
+
+plt.xlabel("True log10 Flux")
+plt.ylabel("Predicted log10 Flux")
+plt.title("Predicted vs True (log10 Flux)")
+
+plt.grid(True)
+
+plt.tight_layout()
+
+plt.savefig(PLOT_DIR/"prediction_vs_truth.png",dpi=300)
+
+plt.close()
+
+
+
+prediction_df = pd.DataFrame({
+
+    "True log10 Flux": truth_log,
+    "Predicted log10 Flux": predictions_log,
+
+    "True Flux": 10**truth_log,
+    "Predicted Flux": 10**predictions_log,
+
+    "Log Residual": predictions_log - truth_log
+})
 
 prediction_df.to_csv(
-
-    PREDICTIONS_PATH,
-
+    TABLE_DIR/"predictions.csv",
     index=False
-
 )
 
-print("\nPredictions saved.")
-
-rmse = np.sqrt(
-
-    mean_squared_error(
-
-        truth,
-
-        predictions
-
-    )
-
+history_df.to_csv(
+    TABLE_DIR/"history.csv",
+    index=False
 )
 
-mae = mean_absolute_error(
-
-    truth,
-
-    predictions
-
+pd.DataFrame([metrics]).to_csv(
+    TABLE_DIR/"metrics.csv",
+    index=False
 )
 
-r2 = r2_score(
-
-    truth,
-
-    predictions
-
+X_test_df = pd.DataFrame(
+    X_test,
+    columns=[
+        "Temperature",
+        "Radius",
+        "Distance"
+    ]
 )
 
-mape = np.mean(
-
-    np.abs(
-
-        percentage_error
-
-    )
-
+X_test_df.to_csv(
+    TABLE_DIR/"scaled_test_features.csv",
+    index=False
 )
 
+with open(
+    TRIAL_DIR/"architecture.txt",
+    "w"
+) as f:
 
-print("\n")
+    f.write(str(model))
 
-print("=" * 60)
+pd.DataFrame(X_train).to_csv(
+    TABLE_DIR/"X_train_scaled.csv",
+    index=False
+)
 
-print("Model Performance")
+pd.DataFrame(X_test).to_csv(
+    TABLE_DIR/"X_test_scaled.csv",
+    index=False
+)
 
-print("=" * 60)
+pd.DataFrame(y_train).to_csv(
+    TABLE_DIR/"y_train.csv",
+    index=False
+)
 
-print(f"RMSE : {rmse:.3f}")
-
-print(f"MAE  : {mae:.3f}")
-
-print(f"MAPE : {mape:.3f}%")
-
-print(f"R²   : {r2:.5f}")
-
-print("=" * 60)
+pd.DataFrame(y_test).to_csv(
+    TABLE_DIR/"y_test.csv",
+    index=False
+)

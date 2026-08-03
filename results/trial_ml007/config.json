@@ -1,0 +1,25 @@
+{
+    "epochs": 800,
+    "batch_size": 256,
+    "learning_rate": 0.0002,
+    "optimizer": "AdamW",
+    "scheduler": "ReduceLROnPlateau",
+    "loss": "HuberLoss",
+    "architecture": [
+        128,
+        64,
+        32,
+        16,
+        16,
+        1
+    ],
+    "dropout": [
+        0.1,
+        0.08,
+        0.05
+    ],
+    "device": "cpu",
+    "training_samples": 10000,
+    "testing_samples": 10000,
+    "parameters": 12113
+}

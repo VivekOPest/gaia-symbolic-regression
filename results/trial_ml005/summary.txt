@@ -1,0 +1,12 @@
+GAIA Neural Network Trial
+==================================================
+Trial : trial_ml006
+Training samples : 16000
+Testing samples : 4000
+Best epoch : 32
+Validation loss : 0.024699
+RMSE (log10 Flux): 0.1572
+MAE (log10 Flux): 0.1227
+Mean Absolute Log Error : 0.1227
+R2 : 0.938077
+Training time : 190.95 sec

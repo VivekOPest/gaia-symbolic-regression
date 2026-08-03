@@ -33,6 +33,11 @@ import torch.nn as nn
 
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import (
+    mean_absolute_error,
+    mean_squared_error,
+    r2_score
+)
 
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
@@ -65,7 +70,7 @@ RESULTS_DIR.mkdir(exist_ok=True)
 
 RANDOM_STATE = 42
 
-TEST_SIZE = 0.20
+TEST_SIZE = 0.50
 
 BATCH_SIZE = 256
 
@@ -328,5 +333,398 @@ print("\nInput Shape :", X_batch.shape)
 
 print("Prediction Shape :", prediction.shape)
 
-
 print("\nModel Successfully Built.\n")
+
+# ==========================================================
+# Loss Function
+# ==========================================================
+
+criterion = nn.MSELoss()
+
+print("Loss Function :", criterion)
+
+# ==========================================================
+# Optimizer
+# ==========================================================
+
+optimizer = torch.optim.AdamW(
+
+    model.parameters(),
+
+    lr=LEARNING_RATE,
+
+    weight_decay=1e-4
+
+)
+
+print("Optimizer : AdamW")
+
+# ==========================================================
+# Learning Rate Scheduler
+# ==========================================================
+
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+
+    optimizer,
+
+    mode="min",
+
+    factor=0.5,
+
+    patience=5
+
+)
+
+print("Scheduler : ReduceLROnPlateau")
+
+# ==========================================================
+# Training Variables
+# ==========================================================
+
+best_loss = np.inf
+
+best_epoch = 0
+
+patience_counter = 0
+
+history = {
+
+    "epoch": [],
+
+    "train_loss": [],
+
+    "test_loss": [],
+
+    "learning_rate": []
+
+}
+
+# ==========================================================
+# Training Loop
+# ==========================================================
+
+print("\nStarting Training...\n")
+
+start_time = time.time()
+
+for epoch in range(MAX_EPOCHS):
+
+    # ---------------------------------------------
+    # Training
+    # ---------------------------------------------
+
+    model.train()
+
+    train_loss = 0.0
+
+    for X_batch, y_batch in train_loader:
+
+        X_batch = X_batch.to(DEVICE)
+
+        y_batch = y_batch.to(DEVICE)
+
+        optimizer.zero_grad()
+
+        prediction = model(X_batch)
+
+        loss = criterion(prediction, y_batch)
+
+        loss.backward()
+
+        optimizer.step()
+
+        train_loss += loss.item() * X_batch.size(0)
+
+    train_loss /= len(train_loader.dataset)
+
+
+    # ---------------------------------------------
+    # Validation
+    # ---------------------------------------------
+
+    model.eval()
+
+    test_loss = 0.0
+
+    with torch.no_grad():
+
+        for X_batch, y_batch in test_loader:
+
+            X_batch = X_batch.to(DEVICE)
+
+            y_batch = y_batch.to(DEVICE)
+
+            prediction = model(X_batch)
+
+            loss = criterion(prediction, y_batch)
+
+            test_loss += loss.item() * X_batch.size(0)
+
+    test_loss /= len(test_loader.dataset)
+
+
+    # ---------------------------------------------
+    # Scheduler
+    # ---------------------------------------------
+
+    scheduler.step(test_loss)
+
+    current_lr = optimizer.param_groups[0]["lr"]
+
+
+    # ---------------------------------------------
+    # Save History
+    # ---------------------------------------------
+
+    history["epoch"].append(epoch + 1)
+
+    history["train_loss"].append(train_loss)
+
+    history["test_loss"].append(test_loss)
+
+    history["learning_rate"].append(current_lr)
+
+
+    # ---------------------------------------------
+    # Save Best Model
+    # ---------------------------------------------
+
+    if test_loss < best_loss:
+
+        best_loss = test_loss
+
+        best_epoch = epoch + 1
+
+        patience_counter = 0
+
+        torch.save(
+
+            {
+
+                "epoch": best_epoch,
+
+                "validation_loss": best_loss,
+
+                "model_state_dict": model.state_dict(),
+
+                "optimizer_state_dict": optimizer.state_dict()
+
+            },
+
+            MODEL_PATH
+
+        )
+
+    else:
+
+        patience_counter += 1
+
+
+    # ---------------------------------------------
+    # Progress
+    # ---------------------------------------------
+
+    print(
+        f"Epoch {epoch+1:3d}/{MAX_EPOCHS} | "
+        f"Train {train_loss:.6f} | "
+        f"Test {test_loss:.6f} | "
+        f"LR {current_lr:.2e}"
+    )
+
+
+    # ---------------------------------------------
+    # Early Stopping
+    # ---------------------------------------------
+
+    if patience_counter >= EARLY_STOPPING_PATIENCE:
+
+        print("\nEarly stopping triggered.\n")
+
+        break
+
+training_time = time.time() - start_time
+
+print(f"\nTraining completed in {training_time:.1f} seconds.")
+
+
+# ==========================================================
+# Save Training History
+# ==========================================================
+
+history_df = pd.DataFrame(history)
+
+history_df["elapsed_seconds"] = training_time
+
+history_df.to_csv(
+
+    HISTORY_PATH,
+
+    index=False
+
+)
+
+print("\nTraining history saved.")
+
+# ==========================================================
+# Load Best Model
+# ==========================================================
+
+checkpoint = torch.load(
+
+    MODEL_PATH,
+
+    map_location=DEVICE
+
+)
+
+model.load_state_dict(
+
+    checkpoint["model_state_dict"]
+
+)
+
+model.eval()
+
+print("Best model loaded.")
+
+print("\n" + "=" * 60)
+
+print("Training Summary")
+
+print("=" * 60)
+
+print(f"Best Epoch        : {checkpoint['epoch']}")
+
+print(f"Validation Loss   : {checkpoint['validation_loss']:.6f}")
+
+print(f"Training Time     : {training_time:.2f} seconds")
+
+print("=" * 60)
+
+
+# ==========================================================
+# Predictions
+# ==========================================================
+
+predictions = []
+
+truth = []
+
+model.eval()
+
+with torch.no_grad():
+
+    for X_batch, y_batch in test_loader:
+
+        X_batch = X_batch.to(DEVICE)
+
+        output = model(X_batch)
+
+        predictions.extend(
+
+            output.cpu().numpy().flatten()
+
+        )
+
+        truth.extend(
+
+            y_batch.numpy().flatten()
+
+        )
+
+predictions = 10 ** np.array(predictions)
+
+truth = 10 ** np.array(truth)
+
+# ----------------------------------------
+# Prediction Errors
+# ----------------------------------------
+
+residuals = predictions - truth
+
+percentage_error = (
+    residuals / truth
+) * 100
+
+prediction_df = pd.DataFrame(
+
+    {
+
+        "True Flux": truth,
+
+        "Predicted Flux": predictions,
+
+        "Residual": residuals,
+
+        "Percentage Error": percentage_error
+
+    }
+
+)
+
+prediction_df.to_csv(
+
+    PREDICTIONS_PATH,
+
+    index=False
+
+)
+
+print("\nPredictions saved.")
+
+rmse = np.sqrt(
+
+    mean_squared_error(
+
+        truth,
+
+        predictions
+
+    )
+
+)
+
+mae = mean_absolute_error(
+
+    truth,
+
+    predictions
+
+)
+
+r2 = r2_score(
+
+    truth,
+
+    predictions
+
+)
+
+mape = np.mean(
+
+    np.abs(
+
+        percentage_error
+
+    )
+
+)
+
+
+print("\n")
+
+print("=" * 60)
+
+print("Model Performance")
+
+print("=" * 60)
+
+print(f"RMSE : {rmse:.3f}")
+
+print(f"MAE  : {mae:.3f}")
+
+print(f"MAPE : {mape:.3f}%")
+
+print(f"R²   : {r2:.5f}")
+
+print("=" * 60)

@@ -18,7 +18,3 @@ The recovered equation will be compared against the theoretical relation derived
 - Apply symbolic regression using PySR
 - Compare the recovered equation with theory
 - Investigate residuals and physical causes of deviations
-
-## Status
-
-🟡 Project setup in progress.

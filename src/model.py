@@ -8,7 +8,6 @@ Inputs:
     - Temperature (K)
     - Radius (m)
     - Distance (m)
-    - Physics Predictor (R²T⁴/d²)
 
 Output:
     - Gaia Flux Proxy
@@ -449,7 +448,7 @@ config = {
 
     "loss": "HuberLoss",
 
-    "architecture": [128,64,32,16,16,1],
+    "architecture": [256,256,128,64,32,1],
 
     "dropout":[0.10,0.08,0.05],
 
@@ -960,3 +959,4 @@ pd.DataFrame(y_test).to_csv(
     TABLE_DIR/"y_test.csv",
     index=False
 )
+

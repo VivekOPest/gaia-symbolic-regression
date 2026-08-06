@@ -1,0 +1,135 @@
+======================================================================
+GAIA SYMBOLIC REGRESSION
+======================================================================
+Trial            : pysr_trial014
+Project Root     : /workspaces/gaia-symbolic-regression
+Dataset          : /workspaces/gaia-symbolic-regression/data/gaia_features.csv
+Results Folder   : /workspaces/gaia-symbolic-regression/results/pysr_trial014
+Device           : CPU
+======================================================================
+
+======================================================================
+PHASE 1 : DATASET LOADING & VALIDATION
+======================================================================
+Original rows : 20,000
+Removed NaN rows : 0
+Removed infinite rows : 0
+Removed non-positive rows : 0
+Dataset smaller than sampling limit
+Final dataset size : 20,000
+Computed logarithmic variables
+Saved cleaned dataset
+Saved dataset statistics
+Saved histograms
+
+Dataset Summary
+Temperature range : 2725.16  -  34999.37
+Radius range      : 1.095e+08  -  4.230e+11
+Distance range    : 1.129e+18  -  1.935e+20
+Flux range        : 4.731e+02  -  5.718e+07
+
+Phase completed in 2.33 seconds
+======================================================================
+
+
+======================================================================
+GLOBAL POWER-LAW REGRESSION
+======================================================================
+Initial exponents from neighbourhood analysis:
+T : 5.386015
+R : 1.640957
+D : -1.524441
+
+Optimised exponents
+T exponent : 4.549014
+R exponent : 1.570879
+D exponent : -1.455607
+Intercept  : 1.655785
+Iterations : 5
+Success    : True
+
+
+======================================================================
+GUIDED SYMBOLIC REGRESSION
+======================================================================
+Preparing variables for PySR...
+Training samples : 16000
+Testing samples  : 4000
+
+Building PySR model...
+Training PySR...
+Training completed in 239.9 s
+5 candidate equations saved.
+
+
+======================================================================
+MODEL EVALUATION
+======================================================================
+RMSE : 0.232237
+MAE  : 0.170142
+R²   : 0.864783
+Prediction table saved.
+
+
+======================================================================
+BEST EQUATION
+======================================================================
+complexity                                                       7
+loss                                                      0.055302
+equation         (DistanceTerm + RadiusTerm) + (TemperatureTerm...
+score                                                     0.545895
+sympy_format     DistanceTerm + RadiusTerm + TemperatureTerm + ...
+lambda_format    PySRFunction(X=>DistanceTerm + RadiusTerm + Te...
+Name: 3, dtype: object
+Equation table saved.
+Summary written.
+
+
+======================================================================
+GENERATING FIGURES
+======================================================================
+Prediction plot saved.
+Residual histogram saved.
+Residual plot saved.
+Pareto Frontier saved.
+Equation score plot saved.
+Exponent distribution saved.
+All figures generated.
+
+
+======================================================================
+LOCAL EXPONENT STATISTICS
+======================================================================
+
+T
+----------------------------------------
+Mean     : 4.008737
+Median   : 3.960227
+Std Dev  : 2.804399
+95% CI   : ±0.077734
+Min      : -6.871227
+Max      : 15.279023
+CV       : 0.699572
+
+R
+----------------------------------------
+Mean     : 1.465385
+Median   : 1.491437
+Std Dev  : 0.633712
+95% CI   : ±0.017566
+Min      : -0.320160
+Max      : 5.748816
+CV       : 0.432454
+
+D
+----------------------------------------
+Mean     : -1.469532
+Median   : -1.547243
+Std Dev  : 0.417499
+95% CI   : ±0.011572
+Min      : -2.648770
+Max      : 1.237821
+CV       : 0.284103
+
+Exponent statistics saved.
+Confidence interval plot saved.

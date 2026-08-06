@@ -6,33 +6,33 @@ Equation 1
 Complexity : 1
 Loss       : 0.40408033
 Score      : 0.0
-Equation   : 4.05593
+Equation   : 4.0560117
 
 Equation 2
 ----------------------------------------
 Complexity : 3
-Loss       : 0.19065796
-Score      : 0.37556632874802687
-Equation   : RadiusTerm + -9.834529
+Loss       : 0.1906579
+Score      : 0.3755664860978942
+Equation   : RadiusTerm + -9.834053
 
 Equation 3
 ----------------------------------------
 Complexity : 5
-Loss       : 0.16477731
-Score      : 0.07294305568794092
-Equation   : (DistanceTerm * 0.3471125) + RadiusTerm
+Loss       : 0.1647773
+Score      : 0.07294292868205819
+Equation   : RadiusTerm + (DistanceTerm * 0.3471108)
 
 Equation 4
 ----------------------------------------
 Complexity : 7
 Loss       : 0.05530172
-Score      : 0.5458954574193774
-Equation   : (DistanceTerm + RadiusTerm) + (TemperatureTerm + 1.6557573)
+Score      : 0.5458954270753928
+Equation   : TemperatureTerm + ((DistanceTerm + RadiusTerm) + 1.6558261)
 
 Equation 5
 ----------------------------------------
 Complexity : 9
-Loss       : 0.05529525
-Score      : 5.8500698593997685e-05
-Equation   : ((TemperatureTerm * 1.006108) + (RadiusTerm + DistanceTerm)) + 1.5527545
+Loss       : 0.055296987
+Score      : 4.2794352043285776e-05
+Equation   : ((DistanceTerm + 1.5742271) + (TemperatureTerm * 1.0047739)) + RadiusTerm
 

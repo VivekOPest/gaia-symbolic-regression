@@ -1,0 +1,20 @@
+GAIA SYMBOLIC REGRESSION
+============================================================
+
+Training Samples : 16000
+Testing Samples  : 4000
+Training Time    : 249.87 s
+
+RMSE : 0.232238
+MAE  : 0.170105
+R²   : 0.864782
+
+Best Equation
+----------------------------------------
+complexity                                                       7
+loss                                                      0.055302
+equation         ((TemperatureTerm + DistanceTerm) + RadiusTerm...
+score                                                     0.545895
+sympy_format     DistanceTerm + RadiusTerm + TemperatureTerm + ...
+lambda_format    PySRFunction(X=>DistanceTerm + RadiusTerm + Te...
+Name: 3, dtype: object

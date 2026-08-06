@@ -1,0 +1,32 @@
+======================================================================
+GAIA SYMBOLIC REGRESSION
+======================================================================
+Trial            : pysr_trial004
+Project Root     : /workspaces/gaia-symbolic-regression
+Dataset          : /workspaces/gaia-symbolic-regression/data/gaia_features.csv
+Results Folder   : /workspaces/gaia-symbolic-regression/results/pysr_trial004
+Device           : CPU
+======================================================================
+
+======================================================================
+PHASE 1 : DATASET LOADING & VALIDATION
+======================================================================
+Original rows : 20,000
+Removed NaN rows : 0
+Removed infinite rows : 0
+Removed non-positive rows : 0
+Dataset smaller than sampling limit
+Final dataset size : 20,000
+Computed logarithmic variables
+Saved cleaned dataset
+Saved dataset statistics
+Saved histograms
+
+Dataset Summary
+Temperature range : 2725.16  -  34999.37
+Radius range      : 1.095e+08  -  4.230e+11
+Distance range    : 1.129e+18  -  1.935e+20
+Flux range        : 4.731e+02  -  5.718e+07
+
+Phase completed in 1.75 seconds
+======================================================================

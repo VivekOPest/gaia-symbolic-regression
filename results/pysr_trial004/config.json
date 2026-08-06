@@ -1,0 +1,11 @@
+{
+    "random_state": 42,
+    "test_size": 0.2,
+    "maximum_sample": 20000,
+    "local_group_min_size": 30,
+    "local_group_tolerance": 0.05,
+    "pysr_iterations": 250,
+    "pysr_populations": 40,
+    "pysr_population_size": 40,
+    "pysr_parsimony": 0.005
+}

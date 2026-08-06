@@ -1,0 +1,6 @@
+Complexity,Loss,Equation
+1,0.40408033,"4.0560017"
+3,0.19065787,"RadiusTerm + -9.834186"
+5,0.16477731,"(DistanceTerm * 0.34710446) + RadiusTerm"
+7,0.05530177,"((RadiusTerm + DistanceTerm) + 1.6560644) + TemperatureTerm"
+9,0.055296943,"(RadiusTerm + ((TemperatureTerm + 1.5968466) * 1.0031732)) + DistanceTerm"

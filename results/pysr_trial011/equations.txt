@@ -1,0 +1,38 @@
+Candidate Equations
+======================================================================
+
+Equation 1
+----------------------------------------
+Complexity : 1
+Loss       : 0.40408033
+Score      : 0.0
+Equation   : 4.0560274
+
+Equation 2
+----------------------------------------
+Complexity : 3
+Loss       : 0.19065797
+Score      : 0.37556630252305373
+Equation   : RadiusTerm + -9.834524
+
+Equation 3
+----------------------------------------
+Complexity : 5
+Loss       : 0.16477731
+Score      : 0.07294308191291403
+Equation   : RadiusTerm + (DistanceTerm * 0.34710452)
+
+Equation 4
+----------------------------------------
+Complexity : 7
+Loss       : 0.055301752
+Score      : 0.5458951680975377
+Equation   : RadiusTerm + (TemperatureTerm + (DistanceTerm + 1.6556695))
+
+Equation 5
+----------------------------------------
+Complexity : 9
+Loss       : 0.055301726
+Score      : 2.3507398202846025e-07
+Equation   : (RadiusTerm + (TemperatureTerm + (DistanceTerm + 1.6556695))) + 5.9222148e-5
+

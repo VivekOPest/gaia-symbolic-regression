@@ -1,0 +1,6 @@
+complexity,loss,equation,score,sympy_format,lambda_format
+1,0.40408033,4.0560255,0.0,4.05602550000000,PySRFunction(X=>4.05602550000000)
+3,0.1906579,RadiusTerm + -9.834409,0.3755664860978942,RadiusTerm - 9.834409,PySRFunction(X=>RadiusTerm - 9.834409)
+5,0.16477731,RadiusTerm + (DistanceTerm * 0.3471026),0.07294289833807356,DistanceTerm*0.3471026 + RadiusTerm,PySRFunction(X=>DistanceTerm*0.3471026 + RadiusTerm)
+7,0.055301737,((RadiusTerm + 1.6557363) + DistanceTerm) + TemperatureTerm,0.5458953037171294,DistanceTerm + RadiusTerm + TemperatureTerm + 1.6557363,PySRFunction(X=>DistanceTerm + RadiusTerm + TemperatureTerm + 1.6557363)
+9,0.055298157,(RadiusTerm + 1.4985892) + ((TemperatureTerm * 1.0092725) + DistanceTerm),3.236892795980609e-05,DistanceTerm + RadiusTerm + TemperatureTerm*1.0092725 + 1.4985892,PySRFunction(X=>DistanceTerm + RadiusTerm + TemperatureTerm*1.0092725 + 1.4985892)
